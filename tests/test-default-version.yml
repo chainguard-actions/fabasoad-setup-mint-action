@@ -1,0 +1,30 @@
+---
+name: Test setup-mint default version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Mint with default version
+        id: action
+        uses: .
+      - name: Assert mint is in PATH
+        run: |
+          echo "Checking mint binary..."
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint not found in PATH"
+            exit 1
+          fi
+          echo "PASS: mint found in PATH"
+      - name: Assert mint version is default (0.20.1)
+        run: |
+          VERSION=$(mint version 2>&1 || true)
+          echo "mint version output: $VERSION"
+          if echo "$VERSION" | grep -q "0.20.1"; then
+            echo "PASS: mint version is 0.20.1"
+          else
+            echo "FAIL: expected version 0.20.1, got: $VERSION"
+            exit 1
+          fi

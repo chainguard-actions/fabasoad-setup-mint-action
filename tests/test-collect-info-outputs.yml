@@ -1,0 +1,44 @@
+---
+name: Test setup-mint collect-info outputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Mint and capture outputs
+        id: action
+        uses: .
+        with:
+          version: "0.20.1"
+      - name: Assert mint directory exists
+        run: |
+          MINT_DIR="${GITHUB_WORKSPACE}/mint"
+          echo "Checking mint directory: $MINT_DIR"
+          if [ ! -d "$MINT_DIR" ]; then
+            echo "FAIL: mint directory not found at $MINT_DIR"
+            exit 1
+          fi
+          echo "PASS: mint directory exists"
+      - name: Assert mint binary is executable
+        run: |
+          MINT_BIN="${GITHUB_WORKSPACE}/mint/mint"
+          echo "Checking mint binary: $MINT_BIN"
+          if [ ! -f "$MINT_BIN" ]; then
+            echo "FAIL: mint binary not found at $MINT_BIN"
+            exit 1
+          fi
+          if [ ! -x "$MINT_BIN" ]; then
+            echo "FAIL: mint binary is not executable"
+            exit 1
+          fi
+          echo "PASS: mint binary exists and is executable"
+      - name: Assert mint is runnable
+        run: |
+          echo "Running mint..."
+          if ! mint version > /dev/null 2>&1; then
+            echo "FAIL: mint command failed"
+            exit 1
+          fi
+          echo "PASS: mint runs successfully"
