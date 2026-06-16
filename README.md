@@ -1,15 +1,72 @@
-# fabasoad/setup-mint-action
+# Setup Mint
 
-This action sets up a Mint programming language.
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
+![GitHub release](https://img.shields.io/github/v/release/fabasoad/setup-mint-action?include_prereleases)
+![functional-tests](https://github.com/fabasoad/setup-mint-action/actions/workflows/functional-tests.yml/badge.svg)
+![security](https://github.com/fabasoad/setup-mint-action/actions/workflows/security.yml/badge.svg)
+![linting](https://github.com/fabasoad/setup-mint-action/actions/workflows/linting.yml/badge.svg)
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/fabasoad/setup-mint-action](https://github.com/fabasoad/setup-mint-action).
+This action sets up a [Mint](https://www.mint-lang.com/) programming language.
 
-## Versions
+## Supported OS
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v1.2.1 | [`v1.2.1`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.2.1) | [`65ebd88`](https://github.com/fabasoad/setup-mint-action/commit/65ebd88f1c3f1491649444db403a023c71ca3e28) |
-| v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.3.1) | [`d25340c`](https://github.com/fabasoad/setup-mint-action/commit/d25340c2faca9640a61305d6c60bc19f1f718baa) |
+<!-- prettier-ignore-start -->
+| OS      | Arch   |                    |
+|---------|--------|--------------------|
+| Windows | All    | :x:                |
+| Linux   | x86_84 | :white_check_mark: |
+| Linux   | arm    | :x:                |
+| macOS   | x86_84 | :white_check_mark: |
+| macOS   | arm    | :x:                |
+<!-- prettier-ignore-end -->
+
+## Prerequisites
+
+None
+
+## Inputs
+
+<!-- prettier-ignore-start -->
+| Name    | Required | Description                                                                       | Default          | Possible values          |
+|---------|----------|-----------------------------------------------------------------------------------|------------------|--------------------------|
+| version | No       | Mint version that can be found [here](https://github.com/mint-lang/mint/releases) | `0.20.0-alpha.1` | `0.19.0`, `0.18.0`, etc. |
+<!-- prettier-ignore-end -->
+
+## Example usage
+
+### Workflow configuration
+
+```yaml
+name: Setup Mint
+
+on: push
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: fabasoad/setup-mint-action@main
+      - name: Run script
+        run: mint init test-project
+```
+
+### Result
+
+```text
+Mint - Initializing a new project
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙ Creating directory: test-project
+⚙ Writing initial files:
+  ➔ assets/head.html
+  ➔ source/Main.mint
+  ➔ tests/Main.mint
+  ➔ mint.json
+  ➔ .gitignore
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+All done in 292μs!
+```
 
 ## Privacy
 
