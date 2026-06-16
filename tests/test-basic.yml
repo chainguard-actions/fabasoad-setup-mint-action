@@ -1,0 +1,44 @@
+name: Test basic usage (default version)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+      - name: Assert mint directory exists
+        run: |
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          echo "Checking mint directory..."
+          if [ ! -d "$GITHUB_WORKSPACE/mint" ]; then
+            echo "FAIL: mint directory was not created at $GITHUB_WORKSPACE/mint"
+            exit 1
+          fi
+          echo "PASS: mint directory exists"
+      - name: Assert mint binary is executable
+        run: |
+          MINT_BIN="$GITHUB_WORKSPACE/mint/mint"
+          echo "Checking mint binary at: $MINT_BIN"
+          if [ ! -f "$MINT_BIN" ]; then
+            echo "FAIL: mint binary not found at $MINT_BIN"
+            exit 1
+          fi
+          if [ ! -x "$MINT_BIN" ]; then
+            echo "FAIL: mint binary is not executable"
+            exit 1
+          fi
+          echo "PASS: mint binary exists and is executable"
+      - name: Assert mint is in PATH
+        run: |
+          echo "PATH: $PATH"
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint is not available in PATH"
+            exit 1
+          fi
+          echo "PASS: mint is available in PATH"
+          mint --version || true

@@ -1,0 +1,77 @@
+name: "Setup Mint"
+author: Yevhen Fabizhevskyi
+description: "This action sets up a Mint programming language."
+branding:
+  icon: feather
+  color: green
+inputs:
+  version:
+    description: "Mint version"
+    required: false
+    default: "0.18.0"
+runs:
+  using: "composite"
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - name: Fail
+      uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
+      if: ${{ runner.os == 'Windows' }}
+      with:
+        script: core.setFailed('${{ runner.os }} ${{ runner.arch }} is not supported');
+    - name: Collect info
+      if: ${{ runner.os != 'Windows' }}
+      id: info
+      env:
+        RUNNER_OS: ${{ runner.os }}
+        INPUT_VERSION: ${{ inputs.version }}
+      run: |
+        echo "MINT_INSTALLED=$(if command -v mint >/dev/null 2>&1; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+        mkdir -p "$GITHUB_WORKSPACE/mint"
+        echo "MINT_PATH=$GITHUB_WORKSPACE/mint" >> $GITHUB_OUTPUT
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          MINT_BINARY="mint-${INPUT_VERSION}-linux"
+        else
+          MINT_BINARY="mint-${INPUT_VERSION}-osx"
+        fi
+        safe_binary=$(printf '%s' "$MINT_BINARY" | tr -d '\n\r')
+        echo "MINT_BINARY=$safe_binary" >> $GITHUB_OUTPUT
+      shell: sh
+    - name: Download
+      if: ${{ runner.os != 'Windows' && steps.info.outputs.MINT_INSTALLED == 'false' }}
+      uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
+      with:
+        repository: mint-lang/mint
+        latest: false
+        tag: ${{ inputs.version }}
+        fileName: ${{ steps.info.outputs.MINT_BINARY }}
+        tarBall: false
+        zipBall: false
+        out-file-path: mint
+    - name: Install
+      if: ${{ runner.os != 'Windows' && steps.info.outputs.MINT_INSTALLED == 'false' }}
+      env:
+        MINT_BINARY: ${{ steps.info.outputs.MINT_BINARY }}
+        MINT_PATH: ${{ steps.info.outputs.MINT_PATH }}
+      run: |
+        mv "$MINT_BINARY" mint
+        chmod +x mint
+        safe_path=$(printf '%s' "$MINT_PATH" | tr -d '\n\r')
+        echo "$safe_path" >> $GITHUB_PATH
+      shell: sh
+      working-directory: ${{ steps.info.outputs.MINT_PATH }}
