@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v1.2.1 | [`v1.2.1`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.2.1) | [`65ebd88`](https://github.com/fabasoad/setup-mint-action/commit/65ebd88f1c3f1491649444db403a023c71ca3e28) |
+| v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.3.1) | [`d25340c`](https://github.com/fabasoad/setup-mint-action/commit/d25340c2faca9640a61305d6c60bc19f1f718baa) |
 
 ## Privacy
 
