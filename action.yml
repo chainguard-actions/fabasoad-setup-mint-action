@@ -1,0 +1,87 @@
+name: "Setup Mint"
+author: Yevhen Fabizhevskyi
+description: "This action sets up a Mint programming language."
+branding:
+  icon: feather
+  color: green
+inputs:
+  version:
+    description: Mint version. Defaults to the latest version.
+    required: false
+    default: "latest"
+  force:
+    description: |
+      If "false" skips installation if mint is already installed. If "true"
+      installs mint in any case. Defaults to "false".
+    required: false
+    default: "false"
+  github-token:
+    description: |
+      GitHub token that is used to send requests to GitHub API such as getting
+      latest release. Defaults to the token provided by GitHub Actions environment.
+    required: false
+    default: ${{ github.token }}
+outputs:
+  installed:
+    description: Whether mint was installed or not.
+    value: "${{ steps.install-mint.outcome == 'success' }}"
+runs:
+  using: "composite"
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - name: Fail
+      if: (runner.os == 'Windows' || (runner.os == 'Linux' && startsWith(runner.arch, 'ARM')))
+      run: |
+        echo "::error title=OS is not supported::${RUNNER_OS} ${RUNNER_ARCH} is not supported"
+        exit 1
+      shell: sh
+    - name: Collect info
+      id: info
+      env:
+        INPUT_FORCE: "${{ inputs.force }}"
+      run: ./collect-info.sh "${INPUT_FORCE}"
+      shell: sh
+      working-directory: "${{ github.action_path }}/src"
+    - name: Download binary
+      if: ${{ steps.info.outputs.bin-installed == 'false' }}
+      id: download-binary
+      uses: robinraju/release-downloader@28fc21f50d76778e7023361aa1f863e717d3d56f # v1
+      with:
+        repository: "mint-lang/mint"
+        latest: "${{ inputs.version == 'latest' }}"
+        tag: "${{ inputs.version == 'latest' && '' || inputs.version }}"
+        fileName: "mint-*-${{ runner.os == 'Linux' && 'linux' || 'osx' }}-${{ startsWith(runner.arch, 'ARM') && 'arm64' || 'x86_64' }}"
+        out-file-path: "${{ steps.info.outputs.bin-dir }}"
+        token: "${{ inputs.github-token }}"
+    - name: Install mint
+      if: ${{ steps.info.outputs.bin-installed == 'false' }}
+      id: install-mint
+      env:
+        TAG_NAME: ${{ steps.download-binary.outputs.tag_name }}
+        RUNNER_OS_LABEL: ${{ runner.os == 'Linux' && 'linux' || 'osx' }}
+        RUNNER_ARCH_LABEL: ${{ startsWith(runner.arch, 'ARM') && 'arm64' || 'x86_64' }}
+      run: |
+        mv "mint-${TAG_NAME}-${RUNNER_OS_LABEL}-${RUNNER_ARCH_LABEL}" mint
+        chmod +x mint
+        echo "$(pwd)" >> "$GITHUB_PATH"
+      shell: sh
+      working-directory: ${{ steps.info.outputs.bin-path }}
+    - name: Print version
+      run: mint version
+      shell: sh
