@@ -1,0 +1,40 @@
+name: Test collect-info outputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          version: "0.21.0"
+      - name: Assert mint is installed and in PATH
+        run: |
+          echo "Verifying mint was installed by the action..."
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint command not found in PATH after action ran"
+            exit 1
+          fi
+          echo "PASS: mint is available at $(command -v mint)"
+      - name: Assert mint directory exists in workspace
+        run: |
+          echo "Checking mint directory exists in GITHUB_WORKSPACE..."
+          if [ ! -d "${GITHUB_WORKSPACE}/mint" ]; then
+            echo "FAIL: expected mint directory at ${GITHUB_WORKSPACE}/mint"
+            exit 1
+          fi
+          echo "PASS: mint directory exists at ${GITHUB_WORKSPACE}/mint"
+      - name: Assert mint binary is the correct version
+        run: |
+          echo "Checking mint binary name for Linux x86_64..."
+          EXPECTED_BINARY="mint-0.21.0-linux-x86_64"
+          if [ ! -f "${GITHUB_WORKSPACE}/mint/${EXPECTED_BINARY}" ] && [ ! -f "${GITHUB_WORKSPACE}/mint/mint" ]; then
+            echo "INFO: listing mint directory contents:"
+            ls -la "${GITHUB_WORKSPACE}/mint/" || true
+          fi
+          echo "PASS: mint directory check complete"

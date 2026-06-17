@@ -1,0 +1,30 @@
+name: Test basic usage - default version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+      - name: Assert mint is in PATH
+        run: |
+          echo "Checking mint is available in PATH..."
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint command not found in PATH"
+            exit 1
+          fi
+          echo "PASS: mint is available at $(command -v mint)"
+      - name: Assert mint binary is executable
+        run: |
+          MINT_BIN=$(command -v mint)
+          echo "mint binary: $MINT_BIN"
+          if [ ! -x "$MINT_BIN" ]; then
+            echo "FAIL: mint binary is not executable"
+            exit 1
+          fi
+          echo "PASS: mint binary is executable"
