@@ -1,0 +1,46 @@
+---
+name: Test skip installation when mint already installed (force=false)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # Pre-install a fake mint binary so the action detects it and skips installation
+      - name: Install fake mint binary
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          printf '#!/bin/sh\necho "Mint 0.19.0"\n' > "$HOME/.local/bin/mint"
+          chmod +x "$HOME/.local/bin/mint"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      # Verify fake mint is available
+      - name: Verify fake mint is in PATH
+        run: |
+          which mint
+          mint version
+      # Run the action with force=false — should skip installation since mint is already present
+      - id: action
+        uses: .
+        with:
+          version: latest
+          force: "false"
+          github-token: ${{ github.token }}
+      - name: Assert installed output is false (skipped)
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected installed=false (skip) but got: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS: installed=false as expected (installation was skipped)"
+      - name: Assert mint is still available
+        run: |
+          echo "PATH: $PATH"
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint binary not found in PATH after skip"
+            exit 1
+          fi
+          echo "PASS: mint is still available at $(which mint)"

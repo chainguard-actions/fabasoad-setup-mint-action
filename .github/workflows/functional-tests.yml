@@ -1,0 +1,112 @@
+---
+name: Functional Tests
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/functional-tests.yml
+      - src/**
+      - action.yml
+  schedule:
+    # Every Friday at 09:00 JST
+    - cron: "0 0 * * 5"
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    shell: sh
+
+jobs:
+  get-versions:
+    name: Get 3 latest versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      versions: ${{ steps.prepare-list.outputs.versions }}
+    steps:
+      - name: Get releases
+        id: github-releases
+        uses: yakubique/github-releases@2827d6f627dc289b8cbbc9b4d030956d67c37c68 # v1.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repository: "mint-lang/mint"
+          sort: "desc"
+      - name: Prepare list
+        id: prepare-list
+        env:
+          RELEASES_AMOUNT: "3"
+          RELEASES_JSON: "${{ steps.github-releases.outputs.releases }}"
+        run: |
+          versions=$(echo "${RELEASES_JSON}" \
+            | jq -c -r --arg n "${RELEASES_AMOUNT}" '.[0:($n | tonumber)] | . += ["latest"]')
+          echo "versions=${versions}" >> "$GITHUB_OUTPUT"
+  setup-mint:
+    name: Setup mint
+    needs: [get-versions]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["ubuntu-latest", "macos-15", "macos-26"]
+        version: ${{ fromJSON(needs.get-versions.outputs.versions) }}
+    steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - name: Setup mint
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+      - name: Print version
+        run: mint version
+  test-force:
+    name: Test force
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        force: ["true", "false"]
+    steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - name: Setup Mint 1
+        id: setup-mint-1
+        uses: ./
+      - name: Setup Mint 2
+        id: setup-mint-2
+        uses: ./
+        with:
+          force: ${{ matrix.force }}
+      - name: Test action completion
+        env:
+          SETUP_MINT_1_INSTALLED: "${{ steps.setup-mint-1.outputs.installed }}"
+          SETUP_MINT_2_INSTALLED: "${{ steps.setup-mint-2.outputs.installed }}"
+          MATRIX_FORCE: "${{ matrix.force }}"
+        run: |
+          test_equal() {
+            if [ "${2}" != "${3}" ]; then
+              echo "::error title=${1}::Expected: ${3}. Actual: ${2}."
+              exit 1
+            fi
+          }
+          test_equal "Wrong \"installed\" output from setup-mint-1" \
+            "${SETUP_MINT_1_INSTALLED}" \
+            "true"
+          test_equal "Wrong \"installed\" output from setup-mint-2" \
+            "${SETUP_MINT_2_INSTALLED}" \
+            "${MATRIX_FORCE}"

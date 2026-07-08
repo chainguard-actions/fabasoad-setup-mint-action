@@ -1,18 +1,91 @@
-# fabasoad/setup-mint-action
+# Setup Mint
 
-This action sets up a Mint programming language.
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
+![GitHub release](https://img.shields.io/github/v/release/fabasoad/setup-mint-action?include_prereleases)
+![functional-tests](https://github.com/fabasoad/setup-mint-action/actions/workflows/functional-tests.yml/badge.svg)
+![security](https://github.com/fabasoad/setup-mint-action/actions/workflows/security.yml/badge.svg)
+![linting](https://github.com/fabasoad/setup-mint-action/actions/workflows/linting.yml/badge.svg)
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/fabasoad/setup-mint-action](https://github.com/fabasoad/setup-mint-action).
+This action sets up a [Mint](https://www.mint-lang.com/) programming language.
 
-## Versions
+## Supported OS
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v1.2.1 | [`v1.2.1`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.2.1) | [`65ebd88`](https://github.com/fabasoad/setup-mint-action/commit/65ebd88f1c3f1491649444db403a023c71ca3e28) |
-| v1.3.0 | [`v1.3.0`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.3.0) | [`bce27e7`](https://github.com/fabasoad/setup-mint-action/commit/bce27e7de26209604082dca76c96db7a5c1673b0) |
-| v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.3.1) | [`d25340c`](https://github.com/fabasoad/setup-mint-action/commit/d25340c2faca9640a61305d6c60bc19f1f718baa) |
-| v1.3.2 | [`v1.3.2`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.3.2) | [`645d75a`](https://github.com/fabasoad/setup-mint-action/commit/645d75a0797a0390c8b1fdebe369feb6a47bb264) |
-| v1.4.0 | [`v1.4.0`](https://github.com/chainguard-actions/fabasoad-setup-mint-action/tree/v1.4.0) | [`1660831`](https://github.com/fabasoad/setup-mint-action/commit/166083115b0dd726a76c5f9c12fab825a1c7c438) |
+<!-- prettier-ignore-start -->
+| OS      | Arch   |                                  |
+|---------|--------|----------------------------------|
+| Windows | All    | :x:                              |
+| Linux   | x86_84 | :white_check_mark:               |
+| Linux   | arm    | :x:                              |
+| macOS   | x86_84 | :white_check_mark:               |
+| macOS   | arm    | :white_check_mark: `(>= 0.20.0)` |
+<!-- prettier-ignore-end -->
+
+## Prerequisites
+
+None.
+
+## Inputs
+
+```yaml
+- uses: fabasoad/setup-mint-action@v1
+  with:
+    # (Optional) Mint version. Defaults to the latest version.
+    version: "0.21.0"
+    # (Optional) If "false" skips installation if mint is already installed. If
+    # "true" installs mint in any case. Defaults to "false".
+    force: "false"
+    # (Optional) GitHub token that is used to send requests to GitHub API such
+    # as downloading asset. Defaults to the token provided by GitHub Actions
+    # environment.
+    github-token: "${{ github.token }}"
+```
+
+## Outputs
+
+<!-- prettier-ignore-start -->
+| Name      | Description                       | Example |
+|-----------|-----------------------------------|---------|
+| installed | Whether mint was installed or not | `true`  |
+<!-- prettier-ignore-end -->
+
+## Example usage
+
+### Workflow configuration
+
+```yaml
+name: Setup Mint
+
+on: push
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fabasoad/setup-mint-action@v1
+      - name: Run script
+        run: mint init test-project
+```
+
+### Result
+
+```text
+Mint - Initializing a new project
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙ Creating directory: test-project
+⚙ Writing initial files:
+  ➔ assets/head.html
+  ➔ source/Main.mint
+  ➔ tests/Main.mint
+  ➔ mint.json
+  ➔ .gitignore
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+All done in 292μs!
+```
+
+## Contributions
+
+![Alt](https://repobeats.axiom.co/api/embed/2fd14dca25bd7e385ad97b48484ed139295deda9.svg "Repobeats analytics image")
 
 ## Privacy
 

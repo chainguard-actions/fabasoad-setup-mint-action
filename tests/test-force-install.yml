@@ -1,0 +1,42 @@
+---
+name: Test force installation (force=true)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # First install mint so it's already present
+      - name: Pre-install mint
+        uses: .
+        with:
+          version: latest
+          force: "false"
+          github-token: ${{ github.token }}
+      # Now run the action again with force=true — should reinstall
+      - id: action
+        uses: .
+        with:
+          version: latest
+          force: "true"
+          github-token: ${{ github.token }}
+      - name: Assert installed output is true (forced reinstall)
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected installed=true (forced) but got: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS: installed=true as expected (forced reinstall)"
+      - name: Assert mint is available after forced reinstall
+        run: |
+          echo "PATH: $PATH"
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint binary not found in PATH after forced reinstall"
+            exit 1
+          fi
+          echo "PASS: mint is available at $(which mint)"
+          mint version
