@@ -1,0 +1,43 @@
+---
+name: Test skip installation when mint already installed
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install mint first
+        uses: .
+        with:
+          version: latest
+      - name: Verify mint is installed before second run
+        run: |
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint not found after first install"
+            exit 1
+          fi
+          echo "mint is installed at $(which mint)"
+      - id: action
+        name: Run action again with force=false (should skip)
+        uses: .
+        with:
+          version: latest
+          force: "false"
+      - name: Assert installed output is false (skipped)
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected installed=false (skip) but got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: installed=false as expected (installation was skipped)"
+      - name: Assert mint is still on PATH after skip
+        run: |
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint not found on PATH after skip"
+            exit 1
+          fi
+          echo "PASS: mint still available at $(which mint)"

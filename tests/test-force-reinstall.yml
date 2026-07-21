@@ -1,0 +1,44 @@
+---
+name: Test force reinstall when mint already installed
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install mint first
+        uses: .
+        with:
+          version: latest
+      - name: Verify mint is installed before second run
+        run: |
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint not found after first install"
+            exit 1
+          fi
+          echo "mint is installed at $(which mint)"
+      - id: action
+        name: Run action again with force=true (should reinstall)
+        uses: .
+        with:
+          version: latest
+          force: "true"
+      - name: Assert installed output is true (reinstalled)
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected installed=true (force reinstall) but got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: installed=true as expected (force reinstall succeeded)"
+      - name: Assert mint is on PATH after force reinstall
+        run: |
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint not found on PATH after force reinstall"
+            exit 1
+          fi
+          echo "PASS: mint available at $(which mint)"
+          mint version

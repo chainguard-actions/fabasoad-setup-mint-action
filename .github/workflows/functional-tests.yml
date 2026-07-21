@@ -41,11 +41,12 @@ jobs:
         id: prepare-list
         env:
           RELEASES_AMOUNT: "3"
-          RELEASES_JSON: "${{ steps.github-releases.outputs.releases }}"
+          GITHUB_RELEASES: ${{ steps.github-releases.outputs.releases }}
         run: |
-          versions=$(echo "${RELEASES_JSON}" \
+          versions=$(echo "${GITHUB_RELEASES}" \
             | jq -c -r --arg n "${RELEASES_AMOUNT}" '.[0:($n | tonumber)] | . += ["latest"]')
-          echo "versions=${versions}" >> "$GITHUB_OUTPUT"
+          safe_versions=$(printf '%s' "${versions}" | tr -d '\n\r')
+          echo "versions=${safe_versions}" >> "$GITHUB_OUTPUT"
   setup-mint:
     name: Setup mint
     needs: [get-versions]
@@ -60,7 +61,7 @@ jobs:
         version: ${{ fromJSON(needs.get-versions.outputs.versions) }}
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Setup mint
@@ -81,7 +82,7 @@ jobs:
         force: ["true", "false"]
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Setup Mint 1
@@ -94,9 +95,9 @@ jobs:
           force: ${{ matrix.force }}
       - name: Test action completion
         env:
-          SETUP_MINT_1_INSTALLED: "${{ steps.setup-mint-1.outputs.installed }}"
-          SETUP_MINT_2_INSTALLED: "${{ steps.setup-mint-2.outputs.installed }}"
-          MATRIX_FORCE: "${{ matrix.force }}"
+          SETUP_MINT_1_INSTALLED: ${{ steps.setup-mint-1.outputs.installed }}
+          SETUP_MINT_2_INSTALLED: ${{ steps.setup-mint-2.outputs.installed }}
+          MATRIX_FORCE: ${{ matrix.force }}
         run: |
           test_equal() {
             if [ "${2}" != "${3}" ]; then

@@ -1,5 +1,5 @@
 ---
-name: Test basic usage (latest version)
+name: Test basic usage - install latest mint
 on:
   workflow_dispatch:
 jobs:
@@ -11,27 +11,24 @@ jobs:
         uses: .
         with:
           version: latest
-          force: "false"
-          github-token: ${{ github.token }}
       - name: Assert installed output is true
         env:
           ACTUAL: ${{ steps.action.outputs.installed }}
         run: |
           echo "actual: $ACTUAL"
           if [ "$ACTUAL" != "true" ]; then
-            echo "FAIL: expected installed=true but got: $ACTUAL"
+            echo "FAIL: expected installed=true but got '$ACTUAL'"
             exit 1
           fi
           echo "PASS: installed=true"
-      - name: Assert mint binary is available
+      - name: Assert mint is on PATH
         run: |
-          echo "PATH: $PATH"
           if ! command -v mint > /dev/null 2>&1; then
-            echo "FAIL: mint binary not found in PATH"
+            echo "FAIL: mint not found on PATH"
             exit 1
           fi
-          echo "PASS: mint is available at $(which mint)"
-      - name: Assert mint version command works
+          echo "PASS: mint found at $(which mint)"
+      - name: Assert mint version runs
         run: |
           mint version
-          echo "PASS: mint version command succeeded"
+          echo "PASS: mint version ran successfully"
