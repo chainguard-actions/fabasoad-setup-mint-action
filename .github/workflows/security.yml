@@ -1,0 +1,19 @@
+---
+name: Security
+
+on: # yamllint disable-line rule:truthy
+  pull_request: {}
+  push:
+    branches:
+      - main
+
+jobs:
+  sast:
+    name: SAST
+    permissions:
+      contents: read
+      security-events: write
+    uses: fabasoad/reusable-workflows/.github/workflows/wf-security-sast.yml@4e2279474e598bee3ae8ded28899a24bbc7bf971 # main
+    with:
+      code-scanning: true
+      sca: true

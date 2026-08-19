@@ -1,0 +1,109 @@
+---
+name: Functional Tests
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/functional-tests.yml
+      - src/**
+      - action.yml
+  schedule:
+    # Every Friday at 09:00 JST
+    - cron: "0 0 * * 5"
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    shell: sh
+
+jobs:
+  get-versions:
+    name: Get 3 latest versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      versions: ${{ steps.prepare-list.outputs.versions }}
+    steps:
+      - name: Get releases
+        id: github-releases
+        uses: yakubique/github-releases@2827d6f627dc289b8cbbc9b4d030956d67c37c68 # v1.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repository: "mint-lang/mint"
+          sort: "desc"
+      - name: Prepare list
+        id: prepare-list
+        env:
+          RELEASES_AMOUNT: "3"
+          RELEASES_JSON: ${{ steps.github-releases.outputs.releases }}
+        run: |
+          versions=$(printf '%s' "${RELEASES_JSON}" \
+            | jq -c -r --arg n "${RELEASES_AMOUNT}" '.[0:($n | tonumber)] | . += ["latest"]')
+          safe_versions=$(printf '%s' "${versions}" | tr -d '\n\r')
+          echo "versions=${safe_versions}" >> "$GITHUB_OUTPUT"
+  setup-mint:
+    name: Setup mint
+    needs: [get-versions]
+    runs-on: ${{ matrix.os }}-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu", "macos"]
+        version: ${{ fromJSON(needs.get-versions.outputs.versions) }}
+    steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup mint
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+      - name: Print version
+        run: mint version
+  test-force:
+    name: Test force
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        force: ["true", "false"]
+    steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Setup Mint 1
+        id: setup-mint-1
+        uses: ./
+      - name: Setup Mint 2
+        id: setup-mint-2
+        uses: ./
+        with:
+          force: ${{ matrix.force }}
+      - name: Test action completion
+        env:
+          INSTALLED_1: ${{ steps.setup-mint-1.outputs.installed }}
+          INSTALLED_2: ${{ steps.setup-mint-2.outputs.installed }}
+          MATRIX_FORCE: ${{ matrix.force }}
+        run: |
+          test_equal() {
+            if [ "${2}" != "${3}" ]; then
+              echo "::error title=${1}::Expected: ${3}. Actual: ${2}."
+              exit 1
+            fi
+          }
+          test_equal "Wrong \"installed\" output from setup-mint-1" \
+            "${INSTALLED_1}" \
+            "true"
+          test_equal "Wrong \"installed\" output from setup-mint-2" \
+            "${INSTALLED_2}" \
+            "${MATRIX_FORCE}"

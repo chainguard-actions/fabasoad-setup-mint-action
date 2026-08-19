@@ -27,8 +27,7 @@ main() {
   echo "bin-dir=${bin_dir}" >> "$GITHUB_OUTPUT"
 
   bin_path="$GITHUB_WORKSPACE/${bin_dir}"
-  safe_bin_path=$(printf '%s' "${bin_path}" | tr -d '\n\r')
-  echo "bin-path=${safe_bin_path}" >> "$GITHUB_OUTPUT"
+  echo "bin-path=${bin_path}" >> "$GITHUB_OUTPUT"
 }
 
 main "$@"

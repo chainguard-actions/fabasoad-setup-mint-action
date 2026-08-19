@@ -1,0 +1,48 @@
+---
+name: Test skip installation when already installed
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Pre-install fake mint binary
+        run: |
+          mkdir -p /tmp/fake-mint-bin
+          printf '#!/bin/sh\necho "mint 0.0.0-fake"\n' > /tmp/fake-mint-bin/mint
+          chmod +x /tmp/fake-mint-bin/mint
+          echo "/tmp/fake-mint-bin" >> "$GITHUB_PATH"
+      - name: Verify fake mint is on PATH before action runs
+        run: |
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: fake mint not found on PATH before action"
+            exit 1
+          fi
+          echo "mint found at: $(which mint)"
+          mint version
+      - name: Run action with force=false (should skip installation)
+        id: skip-install
+        uses: .
+        with:
+          version: "latest"
+          force: "false"
+      - name: Assert installation was skipped (installed=false)
+        env:
+          ACTUAL: ${{ steps.skip-install.outputs.installed }}
+        run: |
+          echo "actual: $ACTUAL"
+          # When mint is already installed and force=false, the install-mint step
+          # is skipped (outcome != 'success'), so installed should be false
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected installed=false when skipping but got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: installation correctly skipped, installed=false"
+      - name: Assert mint is still on PATH after action
+        run: |
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint not found on PATH after action"
+            exit 1
+          fi
+          echo "PASS: mint still available at $(which mint)"

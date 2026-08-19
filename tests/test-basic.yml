@@ -1,4 +1,5 @@
-name: Test basic usage - skip install when mint already present
+---
+name: Test basic usage - detect existing Mint installation
 on:
   workflow_dispatch:
 jobs:
@@ -6,33 +7,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Pre-install fake mint binary into PATH
+      - name: Pre-install fake mint binary
         run: |
-          mkdir -p /usr/local/bin
-          printf '#!/bin/sh\necho "Mint 0.0.0-test"\n' > /usr/local/bin/mint
-          chmod +x /usr/local/bin/mint
-          which mint
-          mint
+          mkdir -p /tmp/fake-mint-bin
+          printf '#!/bin/sh\necho "mint 0.0.0-fake"\n' > /tmp/fake-mint-bin/mint
+          chmod +x /tmp/fake-mint-bin/mint
+          echo "/tmp/fake-mint-bin" >> "$GITHUB_PATH"
       - id: action
         uses: .
         with:
+          version: "latest"
           force: "false"
-      - name: Assert installed output is false (mint was already installed, skip)
+      - name: Assert installed output is false (mint was already present, install skipped)
         env:
           ACTUAL: ${{ steps.action.outputs.installed }}
         run: |
           echo "actual: $ACTUAL"
           if [ "$ACTUAL" != "false" ]; then
-            echo "FAIL: expected installed=false (skip), got '$ACTUAL'"
+            echo "FAIL: expected installed=false (skip) but got '$ACTUAL'"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert mint is still available in PATH
+          echo "PASS: installed=false as expected (existing mint detected, install skipped)"
+      - name: Assert mint is on PATH
         run: |
           if ! command -v mint > /dev/null 2>&1; then
-            echo "FAIL: mint not found in PATH"
+            echo "FAIL: mint not found on PATH"
             exit 1
           fi
-          echo "mint found at: $(command -v mint)"
-          mint
-          echo "PASS"
+          echo "PASS: mint found at $(which mint)"
+      - name: Assert mint version runs
+        run: |
+          mint version
+          echo "PASS: mint version ran successfully"

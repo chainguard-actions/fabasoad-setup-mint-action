@@ -73,11 +73,12 @@ runs:
       if: ${{ steps.info.outputs.bin-installed == 'false' }}
       id: install-mint
       env:
-        TAG_NAME: ${{ steps.download-binary.outputs.tag_name }}
-        RUNNER_OS_LABEL: ${{ runner.os == 'Linux' && 'linux' || 'osx' }}
-        RUNNER_ARCH_LABEL: ${{ startsWith(runner.arch, 'ARM') && 'arm64' || 'x86_64' }}
+        TAG_NAME: "${{ steps.download-binary.outputs.tag_name }}"
+        RUNNER_OS_LOWER: "${{ runner.os == 'Linux' && 'linux' || 'osx' }}"
+        RUNNER_ARCH_LOWER: "${{ startsWith(runner.arch, 'ARM') && 'arm64' || 'x86_64' }}"
       run: |
-        mv "mint-${TAG_NAME}-${RUNNER_OS_LABEL}-${RUNNER_ARCH_LABEL}" mint
+        tag_name="${TAG_NAME}"
+        mv "mint-${tag_name}-${RUNNER_OS_LOWER}-${RUNNER_ARCH_LOWER}" mint
         chmod +x mint
         echo "$(pwd)" >> "$GITHUB_PATH"
       shell: sh

@@ -1,0 +1,14 @@
+---
+name: License
+
+on: # yamllint disable-line rule:truthy
+  schedule:
+    # Every January 1st at 14:00 JST
+    - cron: "0 5 1 1 *"
+
+jobs:
+  maintenance:
+    name: Maintenance
+    permissions:
+      contents: write
+    uses: fabasoad/reusable-workflows/.github/workflows/wf-update-license.yml@4e2279474e598bee3ae8ded28899a24bbc7bf971 # main
