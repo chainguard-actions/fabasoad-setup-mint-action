@@ -56,12 +56,12 @@ runs:
     - name: Install
       if: ${{ steps.info.outputs.mint-installed == 'false' }}
       env:
-        MINT_BINARY: "${{ steps.info.outputs.mint-binary }}"
-        MINT_PATH: "${{ steps.info.outputs.mint-path }}"
+        MINT_BINARY: ${{ steps.info.outputs.mint-binary }}
+        MINT_PATH: ${{ steps.info.outputs.mint-path }}
       run: |
         mv "$MINT_BINARY" mint
         chmod +x mint
-        safe_path=$(printf '%s' "$MINT_PATH" | tr -d '\n\r')
-        echo "$safe_path" >> "$GITHUB_PATH"
+        safe=$(printf '%s' "$MINT_PATH" | tr -d '\n\r')
+        echo "$safe" >> "$GITHUB_PATH"
       shell: sh
-      working-directory: "${{ steps.info.outputs.mint-path }}"
+      working-directory: ${{ steps.info.outputs.mint-path }}

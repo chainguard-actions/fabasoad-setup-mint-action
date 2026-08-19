@@ -1,5 +1,5 @@
 ---
-name: Test basic usage - default version
+name: Test mint already installed - skip download
 on:
   workflow_dispatch:
 jobs:
@@ -7,34 +7,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Pre-install a fake mint binary to skip download
+      - name: Pre-install a fake mint binary
         run: |
           mkdir -p "$HOME/.local/bin"
-          cat > "$HOME/.local/bin/mint" << 'EOF'
-          #!/bin/sh
-          echo "Mint 0.21.0"
-          EOF
+          printf '#!/bin/sh\necho "Mint 0.21.0"\n' > "$HOME/.local/bin/mint"
           chmod +x "$HOME/.local/bin/mint"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Verify fake mint is on PATH before action
+        run: |
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: fake mint not found before action runs"
+            exit 1
+          fi
+          echo "Pre-installed mint found: $("$HOME/.local/bin/mint" 2>&1 || true)"
       - id: action
         uses: .
         with:
           version: "0.21.0"
-      - name: Assert mint is on PATH
+      - name: Assert mint is still on PATH after action
         run: |
           echo "Checking mint is available on PATH..."
           if ! command -v mint > /dev/null 2>&1; then
-            echo "FAIL: mint command not found on PATH"
+            echo "FAIL: mint command not found on PATH after action"
             exit 1
           fi
           echo "PASS: mint is available on PATH"
-      - name: Assert mint version
+      - name: Assert mint version output
         run: |
-          echo "Checking mint version..."
           MINT_VERSION="$(mint 2>&1 || true)"
           echo "mint output: $MINT_VERSION"
           if echo "$MINT_VERSION" | grep -q "0.21.0"; then
-            echo "PASS: mint version matches 0.21.0"
+            echo "PASS: mint version is 0.21.0"
           else
             echo "FAIL: expected mint version 0.21.0, got: $MINT_VERSION"
             exit 1

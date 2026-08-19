@@ -44,8 +44,8 @@ main() {
       fi
     fi
   fi
-  safe_binary=$(printf '%s' "${mint_binary}" | tr -d '\n\r')
-  echo "mint-binary=${safe_binary}" >> "$GITHUB_OUTPUT"
+  safe_mint_binary=$(printf '%s' "${mint_binary}" | tr -d '\n\r')
+  echo "mint-binary=${safe_mint_binary}" >> "$GITHUB_OUTPUT"
 }
 
 main "$@"
