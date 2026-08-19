@@ -1,0 +1,32 @@
+---
+name: Update license
+
+on:
+  schedule:
+    - cron: "0 5 1 1 *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+        with:
+          fetch-depth: 0
+      - uses: FantasticFiasco/action-update-license-year@f180e962fa988db222d8f03ef4636750312d1b3d # v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: ${{ github.repository_owner }}
+          labels: enhancement
+          prTitle: Update license copyright year to {{currentYear}}
+          prBody: |
+            ## Changelog
+
+            - Update license copyright year to {{currentYear}}
+
+            ---
+
+            Powered by [FantasticFiasco/action-update-license-year](https://github.com/FantasticFiasco/action-update-license-year)

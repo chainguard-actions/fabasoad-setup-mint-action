@@ -1,0 +1,34 @@
+---
+name: Functional Tests
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: sh
+
+jobs:
+  functional_tests:
+    name: Run init
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest", "macos-latest"]
+        version: ["0.15.1", "0.16.0", "0.16.1", "0.17.0", "0.18.0"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+      - name: Setup mint
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+      - name: Print version
+        run: mint version

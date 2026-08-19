@@ -1,46 +1,39 @@
-name: Test custom version input
+---
+name: Test custom version
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_EVENT_NAME: push
-      GITHUB_REF: refs/heads/main
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: action
         uses: .
         with:
           version: "0.17.0"
-      - name: Assert mint directory exists
+      - name: Assert mint is on PATH
         run: |
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          echo "Checking mint directory..."
-          if [ ! -d "$GITHUB_WORKSPACE/mint" ]; then
-            echo "FAIL: mint directory was not created at $GITHUB_WORKSPACE/mint"
-            exit 1
-          fi
-          echo "PASS: mint directory exists"
-      - name: Assert mint binary is executable
-        run: |
-          MINT_BIN="$GITHUB_WORKSPACE/mint/mint"
-          echo "Checking mint binary at: $MINT_BIN"
-          if [ ! -f "$MINT_BIN" ]; then
-            echo "FAIL: mint binary not found at $MINT_BIN"
-            exit 1
-          fi
-          if [ ! -x "$MINT_BIN" ]; then
-            echo "FAIL: mint binary is not executable"
-            exit 1
-          fi
-          echo "PASS: mint binary exists and is executable"
-      - name: Assert mint is in PATH
-        run: |
-          echo "PATH: $PATH"
+          echo "Checking mint is available on PATH..."
           if ! command -v mint > /dev/null 2>&1; then
-            echo "FAIL: mint is not available in PATH"
+            echo "FAIL: mint command not found on PATH"
             exit 1
           fi
-          echo "PASS: mint is available in PATH"
-          mint --version || true
+          echo "PASS: mint is available"
+      - name: Assert mint version is 0.17.0
+        run: |
+          VERSION_OUTPUT=$(mint version 2>&1 || true)
+          echo "mint version output: $VERSION_OUTPUT"
+          if echo "$VERSION_OUTPUT" | grep -q "0.17.0"; then
+            echo "PASS: mint version is 0.17.0"
+          else
+            echo "FAIL: expected mint version 0.17.0 but got: $VERSION_OUTPUT"
+            exit 1
+          fi
+      - name: Assert mint binary exists in workspace
+        run: |
+          echo "Checking mint binary in workspace..."
+          if [ ! -f "$GITHUB_WORKSPACE/mint/mint" ]; then
+            echo "FAIL: mint binary not found at $GITHUB_WORKSPACE/mint/mint"
+            exit 1
+          fi
+          echo "PASS: mint binary exists"

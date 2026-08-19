@@ -43,7 +43,8 @@ runs:
       run: |
         echo "MINT_INSTALLED=$(if command -v mint >/dev/null 2>&1; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
         mkdir -p "$GITHUB_WORKSPACE/mint"
-        echo "MINT_PATH=$GITHUB_WORKSPACE/mint" >> $GITHUB_OUTPUT
+        safe_path=$(printf '%s' "$GITHUB_WORKSPACE/mint" | tr -d '\n\r')
+        echo "MINT_PATH=$safe_path" >> $GITHUB_OUTPUT
         if [ "$RUNNER_OS" = "Linux" ]; then
           MINT_BINARY="mint-${INPUT_VERSION}-linux"
         else
