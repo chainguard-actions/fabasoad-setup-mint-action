@@ -1,5 +1,5 @@
 ---
-name: Test custom version
+name: Test binary naming for new version on Linux
 on:
   workflow_dispatch:
 jobs:
@@ -10,25 +10,21 @@ jobs:
       - id: action
         uses: .
         with:
-          version: "0.19.0"
-      - name: Assert mint is on PATH
+          version: "0.20.1"
+      - name: Assert mint is installed and executable
         run: |
           echo "Checking mint is available on PATH..."
           if ! command -v mint > /dev/null 2>&1; then
             echo "FAIL: mint not found on PATH"
             exit 1
           fi
-          echo "PASS: mint is available on PATH"
-      - name: Assert mint binary is executable
-        run: |
-          echo "Checking mint binary is executable..."
           MINT_BIN="$(which mint)"
           echo "mint binary location: $MINT_BIN"
           if [ ! -x "$MINT_BIN" ]; then
             echo "FAIL: mint binary is not executable"
             exit 1
           fi
-          echo "PASS: mint binary is executable"
+          echo "PASS: mint is installed and executable"
       - name: Assert mint binary is in workspace mint directory
         run: |
           echo "Checking mint binary is in GITHUB_WORKSPACE/mint..."
@@ -41,14 +37,14 @@ jobs:
             exit 1
           fi
           echo "PASS: mint binary is in expected directory"
-      - name: Assert mint binary file size is non-zero
+      - name: Assert mint binary is named mint
         run: |
-          echo "Checking mint binary is non-empty..."
+          echo "Checking mint binary is named 'mint'..."
           MINT_BIN="$(which mint)"
-          MINT_SIZE="$(wc -c < "$MINT_BIN")"
-          echo "mint binary size: $MINT_SIZE bytes"
-          if [ "$MINT_SIZE" -eq 0 ]; then
-            echo "FAIL: mint binary is empty"
+          MINT_BASENAME="$(basename "$MINT_BIN")"
+          echo "mint binary basename: $MINT_BASENAME"
+          if [ "$MINT_BASENAME" != "mint" ]; then
+            echo "FAIL: expected binary name 'mint' but got: $MINT_BASENAME"
             exit 1
           fi
-          echo "PASS: mint binary is non-empty ($MINT_SIZE bytes)"
+          echo "PASS: mint binary is named 'mint'"

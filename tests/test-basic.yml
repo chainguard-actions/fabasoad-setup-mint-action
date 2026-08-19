@@ -1,5 +1,5 @@
 ---
-name: Test custom version
+name: Test basic usage - default version
 on:
   workflow_dispatch:
 jobs:
@@ -9,8 +9,6 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: action
         uses: .
-        with:
-          version: "0.19.0"
       - name: Assert mint is on PATH
         run: |
           echo "Checking mint is available on PATH..."
@@ -41,14 +39,3 @@ jobs:
             exit 1
           fi
           echo "PASS: mint binary is in expected directory"
-      - name: Assert mint binary file size is non-zero
-        run: |
-          echo "Checking mint binary is non-empty..."
-          MINT_BIN="$(which mint)"
-          MINT_SIZE="$(wc -c < "$MINT_BIN")"
-          echo "mint binary size: $MINT_SIZE bytes"
-          if [ "$MINT_SIZE" -eq 0 ]; then
-            echo "FAIL: mint binary is empty"
-            exit 1
-          fi
-          echo "PASS: mint binary is non-empty ($MINT_SIZE bytes)"
