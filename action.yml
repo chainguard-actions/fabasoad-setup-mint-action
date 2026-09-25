@@ -61,7 +61,7 @@ runs:
     - name: Download binary
       if: ${{ steps.info.outputs.bin-installed == 'false' }}
       id: download-binary
-      uses: robinraju/release-downloader@28fc21f50d76778e7023361aa1f863e717d3d56f # v1
+      uses: chainguard-actions/robinraju-release-downloader@f9d5d361678d1e3714910fd5cde00e7a2491c69e # v1
       with:
         repository: "mint-lang/mint"
         latest: "${{ inputs.version == 'latest' }}"
@@ -74,11 +74,10 @@ runs:
       id: install-mint
       env:
         TAG_NAME: "${{ steps.download-binary.outputs.tag_name }}"
-        RUNNER_OS_LOWER: "${{ runner.os == 'Linux' && 'linux' || 'osx' }}"
-        RUNNER_ARCH_LOWER: "${{ startsWith(runner.arch, 'ARM') && 'arm64' || 'x86_64' }}"
+        RUNNER_OS_LABEL: "${{ runner.os == 'Linux' && 'linux' || 'osx' }}"
+        RUNNER_ARCH_LABEL: "${{ startsWith(runner.arch, 'ARM') && 'arm64' || 'x86_64' }}"
       run: |
-        tag_name="${TAG_NAME}"
-        mv "mint-${tag_name}-${RUNNER_OS_LOWER}-${RUNNER_ARCH_LOWER}" mint
+        mv "mint-${TAG_NAME}-${RUNNER_OS_LABEL}-${RUNNER_ARCH_LABEL}" mint
         chmod +x mint
         echo "$(pwd)" >> "$GITHUB_PATH"
       shell: sh
