@@ -61,18 +61,19 @@ runs:
     - name: Prepare binary name template
       id: binary-name
       env:
-        BINARY_NAME_SUFFIX: ${{ format('{0}-{1}', case(runner.os == 'macOS', 'osx', 'linux'), case(startsWith(runner.arch, 'ARM'), 'arm64', 'x86_64')) }}
+        BINARY_OS_ARCH: "${{ format('{0}-{1}', case(runner.os == 'macOS', 'osx', 'linux'), case(startsWith(runner.arch, 'ARM'), 'arm64', 'x86_64')) }}"
       run: |
-        template="mint-{0}-${BINARY_NAME_SUFFIX}"
+        template="mint-{0}-${BINARY_OS_ARCH}"
         if [ "${RUNNER_OS}" = "macOS" ] && [ "$(sw_vers -productVersion | cut -d '.' -f 1)" -ge 26 ]; then
           template="${template}-openssl3"
         fi
-        echo "template=${template}" >> "$GITHUB_OUTPUT"
+        safe=$(printf '%s' "${template}" | tr -d '\n\r')
+        echo "template=${safe}" >> "$GITHUB_OUTPUT"
       shell: sh
     - name: Download binary
       if: ${{ steps.info.outputs.bin-installed == 'false' }}
       id: download-binary
-      uses: robinraju/release-downloader@28fc21f50d76778e7023361aa1f863e717d3d56f # v1
+      uses: chainguard-actions/robinraju-release-downloader@f9d5d361678d1e3714910fd5cde00e7a2491c69e # v1
       with:
         repository: "mint-lang/mint"
         latest: "${{ inputs.version == 'latest' }}"
@@ -84,7 +85,7 @@ runs:
       if: ${{ steps.info.outputs.bin-installed == 'false' }}
       id: install-mint
       env:
-        BINARY_FILENAME: ${{ format(steps.binary-name.outputs.template, steps.download-binary.outputs.tag_name) }}
+        BINARY_FILENAME: "${{ format(steps.binary-name.outputs.template, steps.download-binary.outputs.tag_name) }}"
       run: |
         mv "${BINARY_FILENAME}" mint
         chmod +x mint
