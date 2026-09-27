@@ -30,7 +30,7 @@ runs:
           -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Fail
-      uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
+      uses: chainguard-actions/actions-github-script@d1f499360d0a539b26e5473c3f97d383f0b746c2 # v6
       if: ${{ runner.os == 'Windows' }}
       with:
         script: core.setFailed('${{ runner.os }} ${{ runner.arch }} is not supported');
@@ -46,16 +46,16 @@ runs:
         safe_path=$(printf '%s' "$GITHUB_WORKSPACE/mint" | tr -d '\n\r')
         echo "MINT_PATH=$safe_path" >> $GITHUB_OUTPUT
         if [ "$RUNNER_OS" = "Linux" ]; then
-          MINT_BINARY="mint-${INPUT_VERSION}-linux"
+          MINT_BINARY="mint-$(printf '%s' "$INPUT_VERSION" | tr -d '\n\r')-linux"
         else
-          MINT_BINARY="mint-${INPUT_VERSION}-osx"
+          MINT_BINARY="mint-$(printf '%s' "$INPUT_VERSION" | tr -d '\n\r')-osx"
         fi
         safe_binary=$(printf '%s' "$MINT_BINARY" | tr -d '\n\r')
         echo "MINT_BINARY=$safe_binary" >> $GITHUB_OUTPUT
       shell: sh
     - name: Download
       if: ${{ runner.os != 'Windows' && steps.info.outputs.MINT_INSTALLED == 'false' }}
-      uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
+      uses: chainguard-actions/robinraju-release-downloader@f623433c0fd9b1efe1b956bd2968bb1e0265335d # v1.7
       with:
         repository: mint-lang/mint
         latest: false
