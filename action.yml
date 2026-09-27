@@ -44,7 +44,7 @@ runs:
       working-directory: "${{ github.action_path }}/src"
     - name: Download
       if: ${{ steps.info.outputs.mint-installed == 'false' }}
-      uses: robinraju/release-downloader@28fc21f50d76778e7023361aa1f863e717d3d56f # v1
+      uses: chainguard-actions/robinraju-release-downloader@f9d5d361678d1e3714910fd5cde00e7a2491c69e # v1
       with:
         repository: mint-lang/mint
         latest: false
@@ -61,7 +61,7 @@ runs:
       run: |
         mv "$MINT_BINARY" mint
         chmod +x mint
-        safe=$(printf '%s' "$MINT_PATH" | tr -d '\n\r')
-        echo "$safe" >> "$GITHUB_PATH"
+        safe_path=$(printf '%s' "$MINT_PATH" | tr -d '\n\r')
+        echo "$safe_path" >> "$GITHUB_PATH"
       shell: sh
       working-directory: ${{ steps.info.outputs.mint-path }}
