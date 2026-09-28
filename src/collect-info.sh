@@ -13,28 +13,29 @@ if_old_version() {
   fi
 }
 
-echo "MINT_INSTALLED=$(if command -v mint >/dev/null 2>&1; then echo true; else echo false; fi)" >> "$GITHUB_OUTPUT"
+MINT_INSTALLED_VAL=$(if command -v mint > /dev/null 2>&1; then echo true; else echo false; fi)
+safe_installed=$(printf '%s' "$MINT_INSTALLED_VAL" | tr -d '\n\r')
+echo "MINT_INSTALLED=$safe_installed" >> "$GITHUB_OUTPUT"
 mkdir -p "$GITHUB_WORKSPACE/mint"
 safe_mint_path=$(printf '%s' "$GITHUB_WORKSPACE/mint" | tr -d '\n\r')
 echo "MINT_PATH=$safe_mint_path" >> "$GITHUB_OUTPUT"
-safe_version=$(printf '%s' "$INPUT_VERSION" | tr -d '\n\r')
 if [ "${RUNNER_OS}" = "Linux" ]; then
-  MINT_BINARY=mint-${safe_version}-linux
+  MINT_BINARY=mint-${INPUT_VERSION}-linux
 else
   if [ "${RUNNER_ARCH#ARM}" != "$RUNNER_ARCH" ]; then
-    if [ "$(if_old_version "${safe_version}")" = "true" ]; then
-      msg="${RUNNER_OS} ${RUNNER_ARCH} is not supported by mint ${safe_version}."
+    if [ "$(if_old_version "${INPUT_VERSION}")" = "true" ]; then
+      msg="${RUNNER_OS} ${RUNNER_ARCH} is not supported by mint ${INPUT_VERSION}."
       msg="${msg} Try newer version of mint (> 0.19.x)."
       echo "::error title=OS is not supported::${msg}"
       exit 1
     else
-      MINT_BINARY=mint-${safe_version}-macos-latest
+      MINT_BINARY=mint-${INPUT_VERSION}-macos-latest
     fi
   else
-    if [ "$(if_old_version "${safe_version}")" = "true" ]; then
-      MINT_BINARY=mint-${safe_version}-osx
+    if [ "$(if_old_version "${INPUT_VERSION}")" = "true" ]; then
+      MINT_BINARY=mint-${INPUT_VERSION}-osx
     else
-      MINT_BINARY=mint-${safe_version}-macos-13
+      MINT_BINARY=mint-${INPUT_VERSION}-macos-13
     fi
   fi
 fi

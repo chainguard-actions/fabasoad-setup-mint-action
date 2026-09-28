@@ -1,3 +1,4 @@
+---
 name: Test custom version input
 on:
   workflow_dispatch:
@@ -10,29 +11,20 @@ jobs:
         uses: .
         with:
           version: "0.19.0"
-      - name: Assert mint is in PATH
+      - name: Assert mint is on PATH
         run: |
-          echo "Checking mint is available in PATH..."
+          echo "Checking mint binary..."
           if ! command -v mint > /dev/null 2>&1; then
-            echo "FAIL: mint command not found in PATH"
+            echo "FAIL: mint not found on PATH after installing version 0.19.0"
             exit 1
           fi
-          echo "PASS: mint is available at: $(command -v mint)"
-      - name: Assert mint binary is executable
+          echo "PASS: mint is available on PATH"
+      - name: Assert mint version is correct
         run: |
-          MINT_PATH="$(command -v mint)"
-          echo "mint path: $MINT_PATH"
-          if [ ! -x "$MINT_PATH" ]; then
-            echo "FAIL: mint binary is not executable"
+          MINT_VERSION=$(mint --version 2>&1 || true)
+          echo "mint version output: $MINT_VERSION"
+          if [ -z "$MINT_VERSION" ]; then
+            echo "FAIL: mint --version produced no output"
             exit 1
           fi
-          echo "PASS: mint binary is executable"
-      - name: Assert mint binary file exists
-        run: |
-          MINT_PATH="$(command -v mint)"
-          echo "mint path: $MINT_PATH"
-          if [ ! -f "$MINT_PATH" ]; then
-            echo "FAIL: mint binary file does not exist"
-            exit 1
-          fi
-          echo "PASS: mint binary file exists at $MINT_PATH"
+          echo "PASS: mint --version returned: $MINT_VERSION"

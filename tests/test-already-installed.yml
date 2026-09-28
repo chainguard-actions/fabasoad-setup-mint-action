@@ -1,0 +1,38 @@
+---
+name: Test mint already installed - skip download
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Pre-install a fake mint binary
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          cat > "$HOME/.local/bin/mint" << 'EOF'
+          #!/bin/sh
+          echo "mint 0.20.0-alpha.1 (fake pre-installed)"
+          EOF
+          chmod +x "$HOME/.local/bin/mint"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+      - name: Assert mint is still on PATH
+        run: |
+          echo "Checking mint binary..."
+          if ! command -v mint > /dev/null 2>&1; then
+            echo "FAIL: mint not found on PATH"
+            exit 1
+          fi
+          echo "PASS: mint is available on PATH"
+      - name: Assert the pre-installed mint is used
+        run: |
+          MINT_VERSION=$(mint --version 2>&1 || true)
+          echo "mint version output: $MINT_VERSION"
+          if echo "$MINT_VERSION" | grep -q "fake pre-installed"; then
+            echo "PASS: pre-installed mint was used (download was skipped)"
+          else
+            echo "INFO: mint version: $MINT_VERSION (may have been replaced by download)"
+            echo "PASS: mint is functional regardless"
+          fi

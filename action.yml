@@ -59,9 +59,9 @@ runs:
         MINT_BINARY: ${{ steps.info.outputs.MINT_BINARY }}
         MINT_PATH: ${{ steps.info.outputs.MINT_PATH }}
       run: |
+        safe_path=$(printf '%s' "$MINT_PATH" | tr -d '\n\r')
         mv "$MINT_BINARY" mint
         chmod +x mint
-        safe_path=$(printf '%s' "$MINT_PATH" | tr -d '\n\r')
         echo "$safe_path" >> "$GITHUB_PATH"
       shell: sh
       working-directory: ${{ steps.info.outputs.MINT_PATH }}

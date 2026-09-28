@@ -8,7 +8,7 @@
 
 **Test Policy SHA:** `843adf9e4b8f85d0c08b27b9d0b09dd094b54702`
 
-**Harden Agent Version:** `1`
+**Harden Agent Version:** `2`
 
 Action **fabasoad--setup-mint-action/v1.3.0** was hardened automatically. 3 finding(s) were identified and resolved across 1 iteration(s).
 
@@ -16,37 +16,29 @@ Action **fabasoad--setup-mint-action/v1.3.0** was hardened automatically. 3 find
 
 ### script-injection (severity: high)
 
-The 'Install' step in action.yml directly interpolates ${{ steps.info.outputs.MINT_BINARY }} and ${{ steps.info.outputs.MINT_PATH }} inside a run: shell block. These are steps.*.outputs.* context values — workflow-controllable — and are substituted by the Actions template engine before the shell ever sees them, enabling command injection. Offending lines: `mv "${{ steps.info.outputs.MINT_BINARY }}" mint` and `echo "${{ steps.info.outputs.MINT_PATH }}" >> "$GITHUB_PATH"`. These should be passed via env: variables and then double-quoted in the shell script.
+The 'Install' step in action.yml directly interpolates ${{ }} expressions inside run: shell commands, violating rule (a). Specifically: `mv "${{ steps.info.outputs.MINT_BINARY }}" mint` and `echo "${{ steps.info.outputs.MINT_PATH }}" >> "$GITHUB_PATH"`. These step outputs originate from a script that processes the untrusted `inputs.version` value. Any ${{ }} expression inside a run: block is a script-injection risk because YAML template substitution occurs before the shell ever sees the string, allowing an attacker-controlled value to inject arbitrary shell commands.
 
 Locations:
 
-- `action.yml:43`
+- `action.yml:44`
 - `action.yml:45`
 
 ### github-env-injection (severity: high)
 
-Multiple unsanitized writes to GitHub special environment files:
-
-(1) action.yml 'Install' step: `echo "${{ steps.info.outputs.MINT_PATH }}" >> "$GITHUB_PATH"` writes a steps.*.outputs.* value directly to $GITHUB_PATH without the required `printf '%s' ... | tr -d '\n\r'` sanitization step.
-
-(2) src/collect-info.sh: The variable $INPUT_VERSION (set from inputs.version by the calling step's env:) is used unsanitized to construct $MINT_BINARY, which is then written to $GITHUB_OUTPUT via `echo "MINT_BINARY=$MINT_BINARY" >> "$GITHUB_OUTPUT"`. An attacker-controlled version input containing newlines could inject arbitrary key=value pairs into GITHUB_OUTPUT.
-
-(3) src/collect-info.sh: `echo "MINT_PATH=$GITHUB_WORKSPACE/mint" >> "$GITHUB_OUTPUT"` — $GITHUB_WORKSPACE is a workflow-controlled env var written to $GITHUB_OUTPUT without sanitization.
+Untrusted values are written to special GitHub environment files without the required sanitization step (`printf '%s' ... | tr -d '\n\r'`). (1) action.yml 'Install' step: `echo "${{ steps.info.outputs.MINT_PATH }}" >> "$GITHUB_PATH"` — a step output (derived from the untrusted `inputs.version`) is written directly to GITHUB_PATH with no newline stripping. (2) src/collect-info.sh: `echo "MINT_BINARY=$MINT_BINARY" >> "$GITHUB_OUTPUT"` — $MINT_BINARY is constructed from $INPUT_VERSION (which is set from `inputs.version`, an untrusted composite-action input) without sanitization before being written to GITHUB_OUTPUT. A newline embedded in the version input could inject additional key=value pairs into the output file.
 
 Locations:
 
 - `action.yml:45`
-- `src/collect-info.sh:15`
-- `src/collect-info.sh:17`
-- `src/collect-info.sh:37`
+- `src/collect-info.sh:35`
 
 ### unpinned-uses (severity: high)
 
-The action uses `robinraju/release-downloader@v1.10` — a mutable tag reference rather than a full 40-character commit SHA. If the tag is moved or the repository is compromised, the action will silently execute different code. Pin to a specific commit SHA, e.g. `robinraju/release-downloader@<40-char-sha> # v1.10`.
+The action.yml 'Download' step references `robinraju/release-downloader@v1.10`, which uses a mutable version tag rather than a pinned 40-character commit SHA. A tag can be moved to point to a different (potentially malicious) commit at any time, making this a supply-chain risk. It should be pinned to a full SHA, e.g. `robinraju/release-downloader@<40-char-sha> # v1.10`.
 
 Locations:
 
-- `action.yml:32`
+- `action.yml:31`
 
 ## Iteration Notes
 
@@ -56,5 +48,5 @@ Locations:
 
 **Notes:**
 
-1. Pinned robinraju/release-downloader@v1.10 to full SHA c39a3b234af58f0cf85888573d361fb6fa281534 in action.yml. 2. Fixed script-injection in the Install step by moving steps.info.outputs.MINT_BINARY and steps.info.outputs.MINT_PATH into an env: block and referencing them as double-quoted shell variables. 3. Fixed github-env-injection: in action.yml Install step, sanitized MINT_PATH with printf|tr before writing to $GITHUB_PATH; in src/collect-info.sh, sanitized $GITHUB_WORKSPACE/mint before writing MINT_PATH to $GITHUB_OUTPUT, sanitized $INPUT_VERSION into safe_version before constructing MINT_BINARY, and sanitized MINT_BINARY before writing to $GITHUB_OUTPUT.
+1. unpinned-uses (action.yml line 31): Pinned robinraju/release-downloader@v1.10 to full SHA @c39a3b234af58f0cf85888573d361fb6fa281534 # v1.10. 2. script-injection (action.yml lines 44-45): Moved ${{ steps.info.outputs.MINT_BINARY }} and ${{ steps.info.outputs.MINT_PATH }} out of the run: shell string into the step's env: block as MINT_BINARY and MINT_PATH, then referenced them as plain shell variables. 3. github-env-injection (action.yml line 45): Added sanitization of MINT_PATH via 'printf | tr -d' before writing to $GITHUB_PATH. In src/collect-info.sh line 35: Added sanitization of MINT_BINARY (and also MINT_PATH and MINT_INSTALLED) via 'printf | tr -d' before writing to $GITHUB_OUTPUT, preventing newline injection from the untrusted inputs.version value.
 
